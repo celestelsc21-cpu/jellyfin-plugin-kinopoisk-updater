@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -9,6 +10,7 @@ using Jellyfin.Plugin.KinopoiskUpdater.Kinopoisk.Models;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Model.Entities;
+using MediaBrowser.Model.Providers;
 
 namespace Jellyfin.Plugin.KinopoiskUpdater.Metadata;
 
@@ -190,6 +192,81 @@ internal static partial class KinopoiskMapper
     }
 
     /// <summary>
+    /// Finds the episodes of a file: one episode, or a range for multi-episode files ("S01E09-E10").
+    /// </summary>
+    /// <param name="episodes">All episodes of the series.</param>
+    /// <param name="seasonNumber">Season number.</param>
+    /// <param name="episodeNumber">First episode number.</param>
+    /// <param name="episodeNumberEnd">Last episode number of a multi-episode file, if any.</param>
+    /// <returns>Found episodes in order; missing numbers in a range are skipped.</returns>
+    public static IReadOnlyList<KpEpisode> FindEpisodes(
+        IEnumerable<KpEpisode> episodes,
+        int seasonNumber,
+        int episodeNumber,
+        int? episodeNumberEnd)
+    {
+        ArgumentNullException.ThrowIfNull(episodes);
+
+        var last = episodeNumberEnd is { } end && end > episodeNumber ? end : episodeNumber;
+        return episodes
+            .Where(e => e.SeasonNumber == seasonNumber && e.EpisodeNumber >= episodeNumber && e.EpisodeNumber <= last)
+            .OrderBy(e => e.EpisodeNumber)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Writes one episode, or several joined with " / " for a multi-episode file.
+    /// </summary>
+    /// <param name="item">Episode item.</param>
+    /// <param name="episodes">Episodes from <see cref="FindEpisodes"/>; must not be empty.</param>
+    public static void ApplyEpisodes(BaseItem item, IReadOnlyList<KpEpisode> episodes)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        ArgumentNullException.ThrowIfNull(episodes);
+        ArgumentOutOfRangeException.ThrowIfZero(episodes.Count);
+
+        ApplyEpisode(item, episodes[0]);
+        if (episodes.Count == 1)
+        {
+            return;
+        }
+
+        var names = episodes
+            .Select(e => KinopoiskParsing.FirstNonEmpty(e.NameRu, e.NameEn))
+            .OfType<string>()
+            .ToList();
+        if (names.Count > 0)
+        {
+            item.Name = string.Join(" / ", names);
+        }
+
+        var overviews = episodes
+            .Select(e => KinopoiskParsing.FirstNonEmpty(e.Synopsis))
+            .OfType<string>()
+            .ToList();
+        if (overviews.Count > 0)
+        {
+            item.Overview = string.Join(" / ", overviews);
+        }
+    }
+
+    /// <summary>
+    /// Builds the images of a card: poster (primary), cover (backdrop) and logo.
+    /// </summary>
+    /// <param name="film">Kinopoisk card.</param>
+    /// <returns>Images with valid http(s) addresses.</returns>
+    public static IReadOnlyList<RemoteImageInfo> BuildImages(KpFilm film)
+    {
+        ArgumentNullException.ThrowIfNull(film);
+
+        var images = new List<RemoteImageInfo>();
+        AddImage(images, ImageType.Primary, film.PosterUrl, film.PosterUrlPreview);
+        AddImage(images, ImageType.Backdrop, film.CoverUrl, null);
+        AddImage(images, ImageType.Logo, film.LogoUrl, null);
+        return images;
+    }
+
+    /// <summary>
     /// Picks the earliest world premiere, falling back to the earliest premiere.
     /// </summary>
     /// <param name="distributions">Distribution entries.</param>
@@ -263,7 +340,23 @@ internal static partial class KinopoiskMapper
             ? []
             : values.OfType<string>().Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
 
-    private static bool IsHttpUrl(string? value)
+    private static void AddImage(List<RemoteImageInfo> images, ImageType type, string? url, string? thumbnailUrl)
+    {
+        if (!IsHttpUrl(url))
+        {
+            return;
+        }
+
+        images.Add(new RemoteImageInfo
+        {
+            ProviderName = KinopoiskConstants.ProviderName,
+            Type = type,
+            Url = url,
+            ThumbnailUrl = IsHttpUrl(thumbnailUrl) ? thumbnailUrl : url
+        });
+    }
+
+    private static bool IsHttpUrl([NotNullWhen(true)] string? value)
         => Uri.TryCreate(value, UriKind.Absolute, out var uri)
            && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp);
 

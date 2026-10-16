@@ -124,7 +124,12 @@ internal sealed class KinopoiskIdResolver
         return KinopoiskMatcher.Rank(found, year, isSeries);
     }
 
-    private static string? GetImdbId(IEnumerable<KeyValuePair<string, string>>? providerIds)
+    /// <summary>
+    /// Reads a stored IMDb id (key compared case-insensitively).
+    /// </summary>
+    /// <param name="providerIds">Provider ids of the item.</param>
+    /// <returns>IMDb id, or <c>null</c>.</returns>
+    public static string? GetImdbId(IEnumerable<KeyValuePair<string, string>>? providerIds)
     {
         if (providerIds is null)
         {

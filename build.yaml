@@ -1,6 +1,6 @@
 name: "Kinopoisk Updater"
 guid: "b6967ba0-3cfc-49a7-b570-8ab9ee8d50ce"
-version: "0.1.0.0"
+version: "0.2.0.0"
 targetAbi: "10.11.0.0"
 framework: "net9.0"
 overview: "Kinopoisk metadata source for movies, series, seasons and episodes"
@@ -14,5 +14,9 @@ owner: "celesta"
 artifacts:
   - "Jellyfin.Plugin.KinopoiskUpdater.dll"
 changelog: |
+  0.2.0.0 - Kinopoisk metadata source: movies, series and episodes (titles, overview,
+  tagline, year, premiere, age rating, rating, genres, countries, status, people),
+  poster/cover/logo images, "Identify" search by title or Kinopoisk id, Kinopoisk id
+  field and link. Episodes are matched by season and episode number within the series.
   0.1.0.0 - Plugin skeleton: configuration page (Kinopoisk API key, actor limit),
   CI build and plugin repository manifest.
