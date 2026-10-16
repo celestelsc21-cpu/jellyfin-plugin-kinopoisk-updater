@@ -3,8 +3,8 @@
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <IsPackable>false</IsPackable>
-    <!-- Test naming (Method_State_Expected) conflicts with these style rules. -->
-    <NoWarn>$(NoWarn);CA1707;SA1600;CS1591</NoWarn>
+    <!-- Test naming (Method_State_Expected) and xUnit style (no ConfigureAwait in tests) conflict with these rules. -->
+    <NoWarn>$(NoWarn);CA1707;SA1600;CS1591;CA2007</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
