@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <title>Kinopoisk Updater</title>
+</head>
+<body>
+    <div id="KinopoiskUpdaterConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button">
+        <div data-role="content">
+            <div class="content-primary">
+                <form id="KinopoiskUpdaterConfigForm">
+
+                    <h2 class="sectionTitle">Кинопоиск</h2>
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="KpApiKey">API-ключ</label>
+                        <input id="KpApiKey" type="password" is="emby-input" autocomplete="off" maxlength="128" />
+                        <div class="fieldDescription">Ключ сервиса kinopoiskapiunofficial.tech (личный кабинет на сайте сервиса). Хранится только в настройках плагина.</div>
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="KpMaxActors">Максимум актёров</label>
+                        <input id="KpMaxActors" type="number" is="emby-input" min="0" max="200" step="1" required />
+                        <div class="fieldDescription">Сколько актёров записывать в карточку (0–200). Режиссёры, сценаристы и остальная съёмочная группа не ограничиваются.</div>
+                    </div>
+
+                    <h2 class="sectionTitle">Как обновлять</h2>
+                    <div class="fieldDescription">
+                        <p>1. Панель управления → Медиатеки → медиатека → включите «Kinopoisk» в источниках метаданных и изображений и поднимите его на первое место.</p>
+                        <p>2. На фильме, сериале, сезоне или эпизоде: меню «⋮» → «Обновить метаданные» → «Заменить все метаданные» (и «Заменить существующие изображения» для постера).</p>
+                        <p>3. Если найден не тот фильм: меню «⋮» → «Определить» → выберите вариант из Кинопоиска или укажите его id.</p>
+                    </div>
+
+                    <div>
+                        <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                            <span>Сохранить</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <script type="text/javascript">
+            (function () {
+                var pluginId = 'b6967ba0-3cfc-49a7-b570-8ab9ee8d50ce';
+                var page = document.querySelector('#KinopoiskUpdaterConfigPage');
+
+                page.addEventListener('pageshow', function () {
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        page.querySelector('#KpApiKey').value = config.ApiKey || '';
+                        page.querySelector('#KpMaxActors').value = config.MaxActors;
+                        Dashboard.hideLoadingMsg();
+                    }, function () {
+                        Dashboard.hideLoadingMsg();
+                    });
+                });
+
+                page.querySelector('#KinopoiskUpdaterConfigForm').addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        config.ApiKey = page.querySelector('#KpApiKey').value.trim();
+                        config.MaxActors = parseInt(page.querySelector('#KpMaxActors').value, 10) || 0;
+                        return ApiClient.updatePluginConfiguration(pluginId, config);
+                    }).then(function (result) {
+                        Dashboard.processPluginConfigurationUpdateResult(result);
+                    }, function () {
+                        Dashboard.hideLoadingMsg();
+                        Dashboard.alert('Не удалось сохранить настройки.');
+                    });
+                    return false;
+                });
+            })();
+        </script>
+    </div>
+</body>
+</html>

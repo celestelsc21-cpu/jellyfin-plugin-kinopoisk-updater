@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Jellyfin.Plugin.KinopoiskUpdater/Jellyfin.Plugin.KinopoiskUpdater.csproj" />
+  <Project Path="Jellyfin.Plugin.KinopoiskUpdater.Tests/Jellyfin.Plugin.KinopoiskUpdater.Tests.csproj" />
+</Solution>
